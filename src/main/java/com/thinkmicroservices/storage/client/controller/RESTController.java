@@ -11,11 +11,13 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,7 +39,8 @@ public class RESTController {
      *
      * @return @throws StorageException
      */
-    public List<Bucket> listBuckets() throws StorageException {
+    
+    public List<Bucket> listBuckets() { 
         return storageService.getAllBuckets();
     }
 
@@ -47,7 +50,7 @@ public class RESTController {
      * @param bucketName
      * @throws StorageException
      */
-    public void createBucket(@PathVariable("bucket") String bucketName) throws StorageException {
+    public void createBucket(@PathVariable("bucket") String bucketName)  {
         storageService.createBucket(bucketName);
     }
 
@@ -57,7 +60,7 @@ public class RESTController {
      * @param bucketName
      * @throws StorageException
      */
-    public void deleteBucket(@PathVariable("bucket") String bucketName) throws StorageException {
+    public void deleteBucket(@PathVariable("bucket") String bucketName)   {
         storageService.removeBucket(bucketName);
     }
 
@@ -68,7 +71,7 @@ public class RESTController {
      * @return
      * @throws StorageException
      */
-    public List<Item> listBucketContents(@PathVariable("bucket") String bucketName) throws StorageException {
+    public List<Item> listBucketContents(@PathVariable("bucket") String bucketName)   {
         return storageService.listBucketContents(bucketName);
     }
 
@@ -80,7 +83,7 @@ public class RESTController {
      * @return
      * @throws StorageException
      */
-    public Map<String, String> uploadFile(@PathVariable("bucket") String bucket, @RequestParam(value = "filename") MultipartFile files) throws StorageException {
+    public Map<String, String> uploadFile(@PathVariable("bucket") String bucket, @RequestParam(value = "filename") MultipartFile files)   {
         log.info("minioService " + storageService);
         log.info("files " + files);
         try {
@@ -124,6 +127,11 @@ public class RESTController {
     public void deleteFile(@PathVariable("bucket") String bucketName, @PathVariable("object") String object) throws StorageException {
 
         storageService.removeObject(bucketName, object);
+    }
+    
+    @ExceptionHandler(value = StorageException.class)
+    public ResponseEntity handleStorageException(StorageException storageException) {
+        return new ResponseEntity(storageException.getMessage(), HttpStatus.CONFLICT);
     }
 
 }
