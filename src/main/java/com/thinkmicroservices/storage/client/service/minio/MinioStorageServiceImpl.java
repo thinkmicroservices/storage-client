@@ -1,5 +1,6 @@
 package com.thinkmicroservices.storage.client.service.minio;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thinkmicroservices.storage.client.service.StorageService;
 import com.thinkmicroservices.storage.client.service.StorageException;
 import io.minio.BucketExistsArgs;
@@ -14,6 +15,7 @@ import io.minio.RemoveObjectArgs;
 import io.minio.Result;
 import io.minio.messages.Bucket;
 import io.minio.messages.Item;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -52,6 +54,7 @@ public class MinioStorageServiceImpl implements StorageService {
 
     MinioClient minioClient;
 
+    private static final int PUT_OBJECT_PART_SIZE = 10485760;
     /**
      *
      * @param name
@@ -86,7 +89,8 @@ public class MinioStorageServiceImpl implements StorageService {
             fos = new FileOutputStream(file);
             fos.write(content);
             //getMinioClient().putObject(bucketName, filename, file.getAbsolutePath());
-            PutObjectArgs args = PutObjectArgs.builder().bucket(bucketName).build();
+            ByteArrayInputStream bais = new ByteArrayInputStream(content);
+            PutObjectArgs args = PutObjectArgs.builder().bucket(bucketName).object(objectName).stream(bais, content.length, PUT_OBJECT_PART_SIZE).build();
 
             getMinioClient().putObject(args);
 
@@ -104,6 +108,7 @@ public class MinioStorageServiceImpl implements StorageService {
         }
 
     }
+    
 
     @Override
     /**
@@ -155,7 +160,12 @@ public class MinioStorageServiceImpl implements StorageService {
     public List<Bucket> getAllBuckets() throws StorageException {
         log.info("get all buckets");
         try {
-            return getMinioClient().listBuckets(ListBucketsArgs.builder().build());
+             
+            List<Bucket> buckets= getMinioClient().listBuckets();//ListBucketsArgs.builder()..build());
+            for(Bucket bucket: buckets){
+                log.info(bucket.name()+" "+bucket.creationDate());
+            }
+            return buckets;
         } catch (Exception ex) {
             throw new StorageException(ex);
         }
@@ -201,7 +211,9 @@ public class MinioStorageServiceImpl implements StorageService {
 
             sourceList.forEach(result -> {
                 try {
-                    targetList.add(result.get());
+                    Item item = result.get();
+                    log.info(new ObjectMapper().writeValueAsString(item));
+                    targetList.add(item);
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
@@ -222,6 +234,10 @@ public class MinioStorageServiceImpl implements StorageService {
     public void removeBucket(String bucketName) throws StorageException {
         log.info("delete bucket: " + bucketName);
         try {
+            if(!listBucketContents(bucketName).isEmpty()){
+                throw new StorageException(String.format("Can't remove [%s], bucket is not empty",bucketName));
+            }
+            
             RemoveBucketArgs removeBucketArgs = RemoveBucketArgs.builder().bucket(bucketName).build();
             getMinioClient().removeBucket(removeBucketArgs);
         } catch (Exception ex) {
