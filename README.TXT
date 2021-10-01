@@ -14,8 +14,11 @@ docker network create minio-net
 
  Now use one of the following to run the Minio image
 
-docker  run  --name minio --network minio-net -p 9000:9000 -p 9001:9001  -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin minio/minio server /data --console-address ":9001"
-docker  run --name minio --network minio-net  -p 9000:9000 -p 9001:9001   minio/minio server /data --console-address ":9001"
+docker run --name minio --network minio-net -v /mnt/data:/data --rm -p 9000:9000 -p 9001:9001  -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin minio/minio server /data --console-address ":9001"
+
+or
+
+docker run --name minio --network minio-net -v /mnt/data:/data --rm -p 9000:9000 -p 9001:9001   minio/minio server /data --console-address ":9001"
 
 
 ----------------------------------------------------------------------
