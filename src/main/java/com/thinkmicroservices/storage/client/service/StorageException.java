@@ -4,7 +4,7 @@ package com.thinkmicroservices.storage.client.service;
  *
  * @author cwoodward
  */
-public class StorageException extends Exception {
+public class StorageException extends RuntimeException {
 
     /**
      *
